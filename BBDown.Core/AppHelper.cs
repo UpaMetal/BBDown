@@ -1,11 +1,13 @@
-﻿using BBDown.Core.Protobuf;
+using BBDown.Core.Protobuf;
 using Google.Protobuf;
 using System.Buffers.Binary;
+using System.Data;
 using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using static BBDown.Core.Util.HTTPUtil;
 using static BBDown.Core.Logger;
+using static BBDown.Core.Util.HTTPUtil;
+
 
 namespace BBDown.Core;
 
@@ -13,6 +15,7 @@ static class AppHelper
 {
     private static readonly string API = "https://grpc.biliapi.net/bilibili.app.playurl.v1.PlayURL/PlayView";
     private static readonly string API2 = "https://app.bilibili.com/bilibili.pgc.gateway.player.v2.PlayURL/PlayView";
+    private static readonly string API3 = "https://grpc.biliapi.net/bilibili.app.playerunite.v1.Player/PlayViewUnite";
     private static readonly string dalvikVer = "2.1.0";
     private static readonly string osVer = "11";
     private static readonly string brand = "M2012K11AC";
@@ -52,29 +55,40 @@ static class AppHelper
     /// <param name="qn"></param>
     /// <param name="appkey"></param>
     /// <returns></returns>
-    public static async Task<string> DoReqAsync(string aid, string cid, string epId, string qn, bool bangumi, string encoding, string appkey = "")
+    public static async Task<string> DoReqAsync(string aid, string cid, string epId, string qn, bool bangumi, bool trial, string encoding, string appkey = "")
     {
 
         var headers = GetHeader(appkey);
         LogDebug("App-Req-Headers: {0}", JsonSerializer.Serialize(headers, JsonContext.Default.DictionaryStringString));
         byte[] data;
         // 只有pgc接口才有配音和片头尾信息
-        if (bangumi)
+        if (trial)
         {
-            if (!(string.IsNullOrEmpty(encoding) || encoding == "HEVC"))
-                LogWarn("APP的番剧不支持 HEVC 以外的编码");
-            var body = GetPayload(Convert.ToInt64(epId), Convert.ToInt64(cid), Convert.ToInt64(qn), PlayViewReq.Types.CodeType.Code265);
-            data = await GetPostResponseAsync(API2, body, headers);
+            var body = GetPayloadTrial(Convert.ToInt64(aid), Convert.ToInt64(cid), Convert.ToInt64(qn), GetVideoCodeType(encoding));
+            data = await GetPostResponseAsync(API3, body, headers);
+            var resp = new MessageParser<PlayViewReply>(() => new PlayViewReply()).ParseFrom(ReadMessage(data));
+            LogDebug("PlayViewUniteReplyPlain: {0}", JsonSerializer.Serialize(resp, JsonContext.Default.PlayViewReply));
+            return ConvertToDashJson(resp);
         }
         else
         {
-            var body = GetPayload(Convert.ToInt64(aid), Convert.ToInt64(cid), Convert.ToInt64(qn), GetVideoCodeType(encoding));
-            data = await GetPostResponseAsync(API, body, headers);
-        }
-        var resp = new MessageParser<PlayViewReply>(() => new PlayViewReply()).ParseFrom(ReadMessage(data));
+            if (bangumi)
+            {
+                if (!(string.IsNullOrEmpty(encoding) || encoding == "HEVC"))
+                    LogWarn("APP的番剧不支持 HEVC 以外的编码");
+                var body = GetPayload(Convert.ToInt64(epId), Convert.ToInt64(cid), Convert.ToInt64(qn), PlayViewReq.Types.CodeType.Code265);
+                data = await GetPostResponseAsync(API2, body, headers);
+            }
+            else
+            {
+                var body = GetPayload(Convert.ToInt64(aid), Convert.ToInt64(cid), Convert.ToInt64(qn), GetVideoCodeType(encoding));
+                data = await GetPostResponseAsync(API, body, headers);
+            }
+            var resp = new MessageParser<PlayViewReply>(() => new PlayViewReply()).ParseFrom(ReadMessage(data));
 
-        LogDebug("PlayViewReplyPlain: {0}", JsonSerializer.Serialize(resp, JsonContext.Default.PlayViewReply));
-        return ConvertToDashJson(resp);
+            LogDebug("PlayViewReplyPlain: {0}", JsonSerializer.Serialize(resp, JsonContext.Default.PlayViewReply));
+            return ConvertToDashJson(resp);
+        }
     }
 
     /// <summary>
@@ -225,6 +239,32 @@ static class AppHelper
         return PackMessage(obj.ToByteArray());
     }
 
+    private static byte[] GetPayloadTrial(long aid, long cid, long qn, PlayViewReq.Types.CodeType codec)
+    {
+        var vod = new VideoVod
+        {
+            Aid = aid,
+            Cid = cid,
+            //obj.Qn = qn;
+            Qn = 127,
+            Fnval = 4048,
+            Fourk = true,
+            PreferCodecType = codec,
+            //Download = 0, //0:播放 1:flv下载 2:dash下载
+            VoiceBalance = 1,
+            ForceHost = 2, //0:允许使用ip 1:使用http 2:使用https
+            IsNeedTrial = true
+        };
+
+        var obj = new PlayViewUniteReq
+        {
+            Vod = vod
+        };
+        LogDebug("PayLoadPlain: {0}", JsonSerializer.Serialize(obj, JsonContext.Default.PlayViewUniteReq));
+        return PackMessage(obj.ToByteArray());
+        //return PythonGzipHelper.PackMessage(obj.ToByteArray());
+    }
+
 
     #region 生成Headers相关方法
 
@@ -360,7 +400,7 @@ static class AppHelper
             writer.Write(comp);
         }
         return stream.ToArray();
-    }
+    }   
 
     /// <summary>
     /// gzip压缩
@@ -402,6 +442,7 @@ static class AppHelper
 [JsonSerializable(typeof(AudioInfoWitCodecId))]
 [JsonSerializable(typeof(DashJson))]
 [JsonSerializable(typeof(PlayViewReq))]
+[JsonSerializable(typeof(PlayViewUniteReq))]
 [JsonSerializable(typeof(PlayViewReply))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 internal partial class JsonContext : JsonSerializerContext { }

@@ -1,10 +1,11 @@
-﻿namespace BBDown;
+namespace BBDown;
 
 internal class MyOption
 {
     public string Url { get; set; } = default!;
     public bool UseTvApi { get; set; }
     public bool UseAppApi { get; set; }
+    public bool UseTrial { get; set; }
     public bool UseIntlApi { get; set; }
     public bool UseMP4box { get; set; }
     public string? EncodingPriority { get; set; }

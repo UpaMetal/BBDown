@@ -9,6 +9,12 @@
     <PackageProjectUrl>https://github.com/nilaoda/BBDown</PackageProjectUrl>
     <StartupObject></StartupObject>
     <PackAsTool>true</PackAsTool>
+    <PublishAot>false</PublishAot>
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishTrimmed>true</PublishTrimmed>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <PublishReadyToRun>false</PublishReadyToRun>
     <ToolCommandName>BBDown</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <Nullable>enable</Nullable>

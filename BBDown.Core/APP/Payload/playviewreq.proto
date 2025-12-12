@@ -14,12 +14,16 @@ message PlayViewReq {
     optional string fromSpmid = 10;
     optional int32 teenagersMode = 11;
     enum CodeType {
-        NOCODE = 0;
-        CODE264 = 1;
-        CODE265 = 2;
-        CODEAV1 = 3;
+            NOCODE = 0;
+            CODE264 = 1;
+            CODE265 = 2;
+            CODEAV1 = 3;
     }
     optional CodeType preferCodecType = 12;
-    optional bool isPreview = 13;
+    enum Business {
+        UNKNOWN = 0;
+        STORY   = 1;
+    }
+    optional Business business = 13;
     optional int64 roomId = 14;
 }

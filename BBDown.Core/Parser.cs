@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Text.Json;
 using static BBDown.Core.Logger;
@@ -16,9 +16,9 @@ public static partial class Parser
         return $"{api}&w_rid=" + string.Concat(MD5.HashData(Encoding.UTF8.GetBytes(api + Config.WBI)).Select(i => i.ToString("x2")).ToArray());
     }
 
-    private static async Task<string> GetPlayJsonAsync(string encoding, string aidOri, string aid, string cid, string epId, bool tvApi, bool intl, bool appApi, string qn = "0")
+    private static async Task<string> GetPlayJsonAsync(string encoding, string aidOri, string aid, string cid, string epId, bool tvApi, bool intl, bool appApi, bool trial, string qn = "0")
     {
-        LogDebug("aid={0},cid={1},epId={2},tvApi={3},IntlApi={4},appApi={5},qn={6}", aid, cid, epId, tvApi, intl, appApi, qn);
+        LogDebug("aid={0},cid={1},epId={2},tvApi={3},IntlApi={4},appApi={5},qn={6}", aid, cid, epId, tvApi, intl, appApi, trial, qn);
 
         if (intl) return await GetPlayJsonAsync(aid, cid, epId, qn);
 
@@ -27,7 +27,7 @@ public static partial class Parser
         bool bangumi = cheese || aidOri.StartsWith("ep:");
         LogDebug("bangumi={0},cheese={1}", bangumi, cheese);
 
-        if (appApi) return await AppHelper.DoReqAsync(aid, cid, epId, qn, bangumi, encoding, Config.TOKEN);
+        if (appApi) return await AppHelper.DoReqAsync(aid, cid, epId, qn, bangumi, trial, encoding, Config.TOKEN);
 
         string prefix = tvApi ? bangumi ? $"{Config.TVHOST}/pgc/player/api/playurltv" : $"{Config.TVHOST}/x/tv/playurl"
             : bangumi ? $"{Config.HOST}/pgc/player/web/v2/playurl" : "api.bilibili.com/x/player/wbi/playurl";
@@ -93,13 +93,13 @@ public static partial class Parser
         return webJson;
     }
 
-    public static async Task<ParsedResult> ExtractTracksAsync(string aidOri, string aid, string cid, string epId, bool tvApi, bool intlApi, bool appApi, string encoding, string qn = "0")
+    public static async Task<ParsedResult> ExtractTracksAsync(string aidOri, string aid, string cid, string epId, bool tvApi, bool intlApi, bool appApi, bool trial, string encoding, string qn = "0")
     {
         var intlCode = "0";
         ParsedResult parsedResult = new();
 
         //调用解析
-        parsedResult.WebJsonString = await GetPlayJsonAsync(encoding, aidOri, aid, cid, epId, tvApi, intlApi, appApi, qn);
+        parsedResult.WebJsonString = await GetPlayJsonAsync(encoding, aidOri, aid, cid, epId, tvApi, intlApi, appApi, trial, qn);
 
         LogDebug(parsedResult.WebJsonString);
 
@@ -193,7 +193,7 @@ public static partial class Parser
             reParse:
             if (reParse)
             {
-                parsedResult.WebJsonString = await GetPlayJsonAsync(encoding, aidOri, aid, cid, epId, tvApi, intlApi, appApi, GetMaxQn());
+                parsedResult.WebJsonString = await GetPlayJsonAsync(encoding, aidOri, aid, cid, epId, tvApi, intlApi, appApi, trial, GetMaxQn());
                 respJson = JsonDocument.Parse(parsedResult.WebJsonString);
                 data = respJson.RootElement;
                 root = nodeName == null ? data : nodeName == "video_info" ? data.GetProperty("result").GetProperty(nodeName) : data.GetProperty(nodeName);
@@ -356,7 +356,7 @@ public static partial class Parser
         else if (parsedResult.WebJsonString.Contains("\"durl\":[")) //flv
         {
             //默认以最高清晰度解析
-            parsedResult.WebJsonString = await GetPlayJsonAsync(encoding, aidOri, aid, cid, epId, tvApi, intlApi, appApi, GetMaxQn());
+            parsedResult.WebJsonString = await GetPlayJsonAsync(encoding, aidOri, aid, cid, epId, tvApi, intlApi, appApi, trial, GetMaxQn());
             data = JsonDocument.Parse(parsedResult.WebJsonString).RootElement;
             root = nodeName == null ? data : nodeName == "video_info" ? data.GetProperty("result").GetProperty(nodeName) : data.GetProperty(nodeName);
             string quality = "";
