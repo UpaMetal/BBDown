@@ -310,13 +310,6 @@ API服务器不支持HTTPS配置，如果有需要请自行使用nginx等反向�
 API详细请参考[json-api-doc.md](./json-api-doc.md)
 </details>
 
-# 演示
-![1](https://user-images.githubusercontent.com/20772925/88686407-a2001480-d129-11ea-8aac-97a0c71af115.gif)
-
-下载完毕后在当前目录查看MP4文件：
-
-![2](https://user-images.githubusercontent.com/20772925/88478901-5e1cdc00-cf7e-11ea-97c1-154b9226564e.png)
-
 # 致谢
 
 * https://github.com/codebude/QRCoder
