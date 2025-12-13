@@ -45,7 +45,7 @@ Options:
   -tv, --use-tv-api                              使用TV端解析模式
   -app, --use-app-api                            使用APP端解析模式
   -intl, --use-intl-api                          使用国际版(东南亚视频)解析模式
-  -trial, --use-trial                            使用使用权限解析(仅支持在-app模式下)
+  -trial, --use-trial                            使用试用权限解析(仅支持在-app模式下)
   --use-mp4box                                   使用MP4Box来混流
   -e, --encoding-priority <encoding-priority>    视频编码的选择优先级, 用逗号分割 例: "hevc,av1,avc"
   -q, --dfn-priority <dfn-priority>              画质优先级,用逗号分隔 例: "8K 超高清, 1080P 高码率, HDR 真彩, 杜比视界"
